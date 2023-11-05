@@ -9,11 +9,15 @@ import (
 	"net/http"
 	"net/http/httputil"
 	"net/url"
+	"os"
 )
 
 type SnooperConfig struct {
-	remote     string
-	listenAddr string
+	remote      string
+	listenAddr  string
+	logFilePath string
+	logHeaders  bool
+	logToFile   bool
 }
 
 type Snooper struct {
@@ -73,17 +77,22 @@ func NewSnooper(config SnooperConfig) (*Snooper, error) {
 	snooper := &Snooper{
 		config: config,
 		target: target,
+		client: &http.Client{},
 	}
+	// server for handling requests
+	snooper.server = &http.Server{Addr: config.listenAddr, Handler: snooper}
 	// proxy to use for serving requests
 	snooper.reverseProxy = httputil.NewSingleHostReverseProxy(target)
 	snooper.reverseProxy.Transport = snooper
 	snooper.reverseProxy.Rewrite = nil
-	snooper.logger = NewLoggingService(snooper)
-	snooper.server = &http.Server{
-		Addr:    config.listenAddr,
-		Handler: snooper,
+	// logging
+	if config.logToFile {
+		fileWriter, err := os.OpenFile(config.logFilePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0664)
+		if err != nil {
+			return nil, err
+		}
+		snooper.logger = NewLoggingService(snooper, fileWriter, config.logHeaders)
 	}
-	snooper.client = &http.Client{}
 	return snooper, nil
 }
 
