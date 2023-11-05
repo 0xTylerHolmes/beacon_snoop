@@ -1,4 +1,4 @@
-package beacon_snoop
+package main
 
 import (
 	"bytes"
