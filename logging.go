@@ -81,11 +81,10 @@ func (s *LoggingService) doRequest(request *http.Request) (response *http.Respon
 	}
 	fmt.Printf("request=%v, request_body=%s, err=%v, took=%v, response=%s\n", request.URL, requestBody, err, duration, responseBody)
 	if s.fileLogger != nil {
-		fmt.Printf("logging to file\n")
 		if s.logHeaders {
-			s.fileLogger.Info().Str("request_url", request.URL.String()).Str("request_type", request.Method).Stringer("request_headers", requestHeaders).Err(requestErr).Str("took", duration.String()).Stringer("response_headers", responseHeaders).Str("response", string(responseBody)).Msg("")
+			s.fileLogger.Info().Str("request_url", request.URL.String()).Str("request_type", request.Method).Stringer("request_headers", requestHeaders).Str("request_body", string(requestBody)).Err(requestErr).Str("took", duration.String()).Stringer("response_headers", responseHeaders).Str("response", string(responseBody)).Msg("")
 		} else {
-			s.fileLogger.Info().Str("request_url", request.URL.String()).Str("request_type", request.Method).Err(requestErr).Str("took", duration.String()).Str("response", string(responseBody)).Msg("")
+			s.fileLogger.Info().Str("request_url", request.URL.String()).Str("request_type", request.Method).Str("request_body", string(requestBody)).Err(requestErr).Str("took", duration.String()).Str("response", string(responseBody)).Msg("")
 		}
 	}
 	return resp, requestErr
@@ -96,6 +95,7 @@ func NewLoggingService(next LoggingInterface, logFileWriter *os.File, logHeaders
 	service := &LoggingService{
 		next:       next,
 		fileLogger: nil,
+		logHeaders: logHeaders,
 	}
 	if logFileWriter != nil {
 		fileLogger := zerolog.New(logFileWriter).With().Timestamp().Logger().Output(logFileWriter).Level(zerolog.InfoLevel)
